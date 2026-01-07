@@ -1,78 +1,90 @@
 'use client';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Library, Mail, Lock } from 'lucide-react';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
-import { useToast } from '@/components/ui/Toast';
-import { login } from '@/lib/auth'; // <--- INI KUNCINYA
+import toast from 'react-hot-toast';
+import { login } from '@/lib/auth'; // <--- PENTING: Import dari file auth yang baru
 
 export default function LoginPage() {
   const router = useRouter();
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '' });
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
+    setLoading(true);
 
     try {
-      // Panggil fungsi login lokal, bukan fetch API
+      // --- PERUBAHAN UTAMA DI SINI ---
+      // DULU: fetch('/api/auth/login') -> Error karena API sudah dihapus
+      // SEKARANG: Panggil fungsi login() lokal
       const user = await login(formData);
-      
-      toast.success('Login berhasil! Selamat datang ' + user.name);
-      
+
+      toast.success('Login berhasil!');
+
+      // Redirect sesuai role
       if (user.role === 'admin') {
         router.push('/admin/dashboard');
       } else {
         router.push('/member/dashboard');
       }
     } catch (error) {
-      toast.error(error.message || 'Email atau password salah');
+      toast.error(error.message || 'Login gagal');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="max-w-md w-full space-y-8 p-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
-            Masuk ke Akun
-          </h2>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 via-blue-700 to-cyan-600 dark:from-blue-900 dark:via-blue-800 dark:to-cyan-900 px-4">
+      <Card className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="inline-flex p-4 bg-gradient-to-br from-blue-600 to-blue-500 rounded-2xl mb-4">
+            <Library className="w-12 h-12 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Selamat Datang</h1>
+          <p className="text-gray-600 dark:text-gray-400">Masuk ke akun Anda</p>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <Input
-              label="Email"
-              type="email"
-              required
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            />
-            <Input
-              label="Password"
-              type="password"
-              required
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            />
-          </div>
 
-          <Button type="submit" fullWidth isLoading={isLoading}>
-            Masuk
-          </Button>
-
-          <div className="text-center text-sm">
-            <span className="text-gray-600 dark:text-gray-400">Belum punya akun? </span>
-            <Link href="/register" className="font-medium text-blue-600 hover:text-blue-500">
-              Daftar sekarang
-            </Link>
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            label="Email"
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            icon={<Mail className="w-5 h-5" />}
+            required
+            placeholder="admin@library.com"
+          />
+          <Input
+            label="Password"
+            type="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            icon={<Lock className="w-5 h-5" />}
+            required
+            placeholder="••••••••"
+          />
+          <Button type="submit" fullWidth loading={loading}>Masuk</Button>
         </form>
+
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Belum punya akun?{' '}
+            <Link href="/register" className="text-blue-600 hover:underline font-medium">Daftar di sini</Link>
+          </p>
+        </div>
       </Card>
     </div>
   );
